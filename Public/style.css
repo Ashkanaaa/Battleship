@@ -40,6 +40,11 @@ button{
     grid-area: enemyBoard;
     background-color: blueviolet;
 }
+.Ground{
+    display: grid;
+    grid-template-columns: repeat(10, 1fr) ;
+    grid-template-rows: repeat(10, 1fr);
+}
 .gameInfo{
     grid-area: gameInfo;
     background-color: brown;
@@ -54,7 +59,9 @@ button{
     width: 80%;
     height: 80%;
 }
-
+.cell{
+    border-radius: 1px black solid;
+}
 #GameInfo{
     text-align: center;
     font-size: smaller;
