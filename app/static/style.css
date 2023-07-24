@@ -60,7 +60,7 @@ button{
     height: 80%;
 }
 .cell{
-    border-radius: 1px black solid;
+    border: 1px black solid;
 }
 #GameInfo{
     text-align: center;
