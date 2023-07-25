@@ -7,7 +7,7 @@ function gameInit(){
 function generateGrid(side){
     id = side+"Ground";
     let board = document.getElementById(id);
-    for(x=0; x<= 100; x++){
+    for(x=0; x< 100; x++){
         let cell = document.createElement("div");
         cell.className = "cell";
         cell.id = x;
