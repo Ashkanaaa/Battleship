@@ -2,8 +2,47 @@ var Vertical;
 var dragging;
 var firstTime
 removedShips = []
+var Randomized = false
+
+//////////////////////////////////////// Matrix
+matrix = []
+
+class Block{
+    constructor(filled,type,hit){
+        this.filled = filled
+        this.type = type
+        this.hit = hit
+    }
+}
 
 
+for (let i = 0; i < 100; i++) {
+    const block = new Block(false, null, false); // Provide initial values for filled, type, and hit
+    matrix.push(block);
+  }
+
+//////////////////////////////////////// Ships
+  
+
+class Ship{
+    constructor(name,size,color){
+        this.name = name;
+        this.size = size;
+        this.color = color
+    }
+}
+
+const carrier = new Ship('Carrier',5,'Grey')
+const battleship = new Ship('Battleship',4, 'Yellow')
+const submarine = new Ship('Submarine',3, 'Red')
+const destroyer = new Ship('Destroyer',3, 'Brown')
+const cruiser = new Ship('Cruiser',2, 'Green')
+
+const ships = [carrier,battleship,submarine,destroyer,cruiser]
+var dropped //whether the ship was dropped successfully on the board
+
+
+//////////////////////////////////////// Functions
 
 function gameInit(){
     console.log("salam");
@@ -16,48 +55,30 @@ function gameInit(){
 
 
 function generateGrid(side){
-    if(side == "Player"){
-        id = side+"Grid";
-        const board = document.getElementById(id);
-        for(x=0; x< 100; x++){
-            const cell = document.createElement("div");
-            cell.classList.add('cell')
-            cell.id =x;
-            board.appendChild(cell);
-            cell.addEventListener('click', e=>gridEventListener(e));
-            cell.addEventListener('dragover', dragOver);
-            cell.addEventListener('drop', drop);
-        }
-    }else{
-        id = side+"Grid";
-        const board = document.getElementById(id);
-        for(x=0; x< 100; x++){
-            const cell = document.createElement("div");
-            cell.classList.add('cell')
-            cell.id = x * -1;
-            board.appendChild(cell);
-            cell.addEventListener('click', e=>gridEventListener(e));
-            cell.addEventListener('dragover', dragOver);
-            cell.addEventListener('drop', drop);
-        }
-    }
     
+    id = side+"Grid";
+    const board = document.getElementById(id);
+    for(x=0; x< 100; x++){
+        const cell = document.createElement("div");
+        cell.classList.add('cell')
+        cell.id = x + side;
+        board.appendChild(cell);
+        cell.addEventListener('click', gridEventListener);
+        cell.addEventListener('dragover', dragOver);
+        cell.addEventListener('drop', drop);
+    }
 }
 
 function gridEventListener(event) {
     console.log((event.targetElement || event.srcElement).id);
-    console.log("KUSE");
 }
 
 function addEventListener(){
-    const fleetpos = document.getElementsByClassName("Position-B")[0];
+    const fleetpos = document.getElementById("position-B")
     fleetpos.addEventListener('click', changeFleetPosition);
 
     const randFleet = document.getElementById("randomize-b");
-    randFleet.addEventListener('click', function(){
-        ships.forEach(ship => addShip(true,ship))
-        
-    });
+    randFleet.addEventListener('click', randomizeFleet)
 
     //event listener for ships
     const ship1 = document.getElementsByClassName("Carrier")[0]
@@ -85,6 +106,19 @@ function addEventListener(){
 
 }
 
+function randomizeFleet(){
+    if(!Randomized){
+        ships.forEach(ship => addShip(true,ship))
+    
+        ships.forEach((ship) => {
+            element = document.getElementsByClassName(ship.name)[0]
+            element.remove()
+        });
+
+        Randomized = true
+    }
+}
+
 
 function dragStart(e){
     dragging = e.target
@@ -95,23 +129,10 @@ function dragStart(e){
 
 function dragOver(e){
     e.preventDefault();
-    // console.log("asdajshdgajhgdjhasgdjhasgdjhasgdhjagdjsaghjd")
-    
-    // if(firstTime && Vertical){
-    //     console.log("dragging.style.height")
-    //     const computedStyles = window.getComputedStyle(dragging);
-    //     const heightValue = computedStyles.getPropertyValue("height");
-    //     const widthValue = computedStyles.getPropertyValue("width");
-    //     dragging.style.height = widthValue;
-    //     dragging.style.width = heightValue;
-    //     firstTime = false
-    // }
-    
 }
 
 function drop(e){
-    const startIndex = e.target.id; //getting the cell id that the ship is being dropped
-    //console.log(startId)
+    const startCell = parseInt(e.target.id) //getting the cell id that the ship is being dropped
     //figuring out which ship is being dropped at that cell
     var ship 
     let found = false
@@ -119,7 +140,7 @@ function drop(e){
         
         if(dragging.classList.contains(ships[x].name)){
             ship = ships[x]
-            console.log(ship.name)
+            //console.log(ship.name)
             found = true
             break
         }
@@ -128,23 +149,24 @@ function drop(e){
     if(!found){
         console.log("ERROR: ship was not found")
     }else{
-        addShip(false,ship, startIndex)
+        addShip(false,ship, startCell)
         //if dropped successfully then remove the ship
         if(dropped){
-            removedShips.push(ship.name) //add the name of the ship to the removed ship so that "changeFleetPosition doesnt include it when switching from vertical to horizontal"
-            // console.log("removed ships: " + ship.name)
-            // console.log(removedShips)
+            removedShips.push(ship.name) //add the name of the ship to the removed ship so that "changeFleetPosition doesnt include it when switching from vertical to horizontal
             dragging.remove()
+            Randomized = true // set Randomized to true to disable the randomized button after the first ship had been dropped
         }
     }
 }
 
+//chenging the fleet position from vertical to horizontal
 function changeFleetPosition(e){
-    var pos = document.getElementsByClassName("Position-B")[0];
+    var button = document.getElementById("position-B")
     const container = document.getElementsByClassName('Ships')[0]
 
     shipArray = []
 
+    //getting all the ships that have not been removed (dropped) yet
     for(let x = 0;x<ships.length;x++){
         let ship =  document.getElementsByClassName(ships[x].name)[0]
         if(!removedShips.includes(ships[x].name)){
@@ -152,28 +174,15 @@ function changeFleetPosition(e){
         }
         
     }
-
-    // const ship1 = document.getElementsByClassName("Carrier")[0]
-    
-
-    // const ship2 = document.getElementsByClassName("Battleship")[0]
-    
-
-    // const ship3 = document.getElementsByClassName("Submarine")[0]
-    
-
-    // const ship4 = document.getElementsByClassName("Destroyer")[0]
-    
-    // const ship5 = document.getElementsByClassName("Cruiser")[0]
     
     if(Vertical){
         Vertical = false;
-        pos.innerText = "Vertical";
+        button.innerText = "Vertical";
         container.style.removeProperty('display')
         
     }else{
         Vertical = true;
-        pos.innerText="Horizontal";
+        button.innerText="Horizontal";
         container.style.display = 'flex';
 
     }
@@ -185,166 +194,61 @@ function changeFleetPosition(e){
 }
 
 
-function changeShipPos(elm){
-
-    const computedStyles = window.getComputedStyle(elm);
+function changeShipPos(target){
+    const computedStyles = window.getComputedStyle(target);
     const heightValue = computedStyles.getPropertyValue("height");
     const widthValue = computedStyles.getPropertyValue("width");
-    console.log(heightValue)
-    elm.style.height = widthValue;
-    elm.style.width = heightValue;
-    
-
+    target.style.height = widthValue;
+    target.style.width = heightValue;
 }
-//////////////////////////////////////// Matrix
-class Block{
-    constructor(filled,type,hit){
-        this.filled = filled
-        this.type = type
-        this.hit = hit
-    }
-}
-
-matrix = []
-
-for (let i = 0; i < 100; i++) {
-    const block = new Block(false, null, false); // Provide initial values for filled, type, and hit
-    matrix.push(block);
-  }
-
-///////////////////////////////////////////////
-  
-
-class Ship{
-    constructor(name,size,color){
-        this.name = name;
-        this.size = size;
-        this.color = color
-    }
-}
-
-const carrier = new Ship('Carrier',5,'Grey')
-const battleship = new Ship('Battleship',4, 'Yellow')
-const submarine = new Ship('Submarine',3, 'Red')
-const destroyer = new Ship('Destroyer',3, 'Brown')
-const cruiser = new Ship('Cruiser',2, 'Green')
-
-const ships = [carrier,battleship,submarine,destroyer,cruiser]
-let dropped //whether the ship was dropped successfully on the board
  
-function addShip(rand,ship,startIndex){
+function addShip(rand,ship,startCell){
+    //selecting all the cells
     const cells = document.querySelectorAll('#PlayerGrid div')
     if (rand) {
         let randIndex = Math.floor(Math.random() * 100) //randdom number [0,100)
         let randPos = Math.random() < 0.5 //randomize the position of the ship
         Vertical = randPos
-        //console.log(randIndex)
-
-        //checking the edges
-        if(Vertical){
-            // console.log("vertical")
-            if((109 - (10 * ship.size)) < randIndex){
-                randIndex = randIndex - ship.size * 10 + 10
-            }
-        }else{ 
-            // console.log("horizontal")
-            if((100-ship.size) < randIndex){
-                randIndex =  100 - ship.size 
-            }
-        }
-
-        shipCells = []
-        
-        for(let x = 0;x<ship.size;x++){
-            if(Vertical){
-                shipCells.push(cells[Number(randIndex) + x * 10])
-                // matrix[Number(randIndex) + x * 10].filled = true
-                // matrix[Number(randIndex) + x * 10].type = ship
-            }else{
-                shipCells.push(cells[Number(randIndex)+x])
-                // matrix[Number(randIndex)+x].filled = true
-                // matrix[Number(randIndex)+x].type = ship
-                //console.log(shipCells)
-            }
-        }
-        console.log(shipCells)
-
-        
-        //preventing ships to extend horizontally
-        var valid = true
-        
-        if(!Vertical){
-            let index = parseInt(randIndex/10) * 10
-            // console.log("index: " + index)
-            // console.log("RRRRRRRR INDEX: " + randIndex)
-            if((index + (10 - ship.size)) < randIndex){
-                valid = false
-                //console.log("its false")
-            }
-        }
-                // if(Vertical){
-        //     shipCells.every((index) =>
-        //         //console.log("id" + shipCells[0].id)
-        //         valid = Number(shipCells[0].id) < 90 + (10 * index + 1)
-                
-        //         )
-        //         console.log("valid:" + valid)
-        // }else{
-        //     shipCells.every((index)=>
-        //     //console.log("id" + shipCells[0].id)
-        //         valid = Number(shipCells[0].id) % 10 !== 10 - (shipCells.length - (index + 1))
-                
-        //         )
-        //         console.log("valid:" + valid)
-        // }
-
-
-                                                                                        /////////////////////    
+        startIndex = randIndex
     } else{
-        console.log("startIndex: " + startIndex)
-        console.log("ship: " + ship.name)
+        startIndex = startCell
+    }
 
+    ///////////
+    if(Vertical){
+        // console.log("vertical")
+        if((109 - (10 * ship.size)) < startIndex){
+            startIndex = startIndex - ship.size * 10 + 10
+        }
+    }else{ 
+        // console.log("horizontal")
+        if((100-ship.size) < startIndex){
+            startIndex =  100 - ship.size 
+        }
+    }
+
+    shipCells = []
+    
+    for(let x = 0;x<ship.size;x++){
         if(Vertical){
-            // console.log("vertical")
-            if((109 - (10 * ship.size)) < startIndex){
-                startIndex = startIndex - ship.size * 10 + 10
-            }
-        }else{ 
-            // console.log("horizontal")
-            if((100-ship.size) < startIndex){
-                startIndex =  100 - ship.size 
-            }
+            shipCells.push(cells[Number(startIndex) + x * 10])
+        }else{
+            shipCells.push(cells[Number(startIndex)+x])
         }
+    }
+    //console.log(shipCells)
 
-        shipCells = []
-        
-        for(let x = 0;x<ship.size;x++){
-            if(Vertical){
-                shipCells.push(cells[Number(startIndex) + x * 10])
-                // matrix[Number(randIndex) + x * 10].filled = true
-                // matrix[Number(randIndex) + x * 10].type = ship
-            }else{
-                console.log("here")
-                shipCells.push(cells[Number(startIndex)+x])
-                // matrix[Number(randIndex)+x].filled = true
-                // matrix[Number(randIndex)+x].type = ship
-                //console.log(shipCells)
-            }
-        }
-        console.log(shipCells)
-
-        
-        //preventing ships to extend horizontally
-        var valid = true
-        
-        if(!Vertical){
-            let index = parseInt(startIndex/10) * 10
-            // console.log("index: " + index)
-            // console.log("RRRRRRRR INDEX: " + randIndex)
-            if((index + (10 - ship.size)) < startIndex){
-                valid = false
-                //console.log("its false")
-            }
+    
+    //preventing ships to extend horizontally
+    var valid = true
+    
+    if(!Vertical){
+        let index = parseInt(startIndex/10) * 10
+        // console.log("index: " + index)
+        // console.log("RRRRRRRR INDEX: " + randIndex)
+        if((index + (10 - ship.size)) < startIndex){
+            valid = false
+            //console.log("its false")
         }
     }
 
@@ -363,29 +267,23 @@ function addShip(rand,ship,startIndex){
         }else{
             dropped = false
         }
-        
-        // console.log("RANDOM INDEX: " + randIndex)
-        // console.log("NOT VALID")
     }
 
 }
 
 function addToMatrix(shipCells, ship){
-        //console.log("HEYYYYYYYYY:" + shipCells[0].id)
-        //firstIndex = shipCells[0].id
-        //console.log("asfsdhfgadgfajdg"+firstIndex)
+    for(x = 0;x<shipCells.length;x++){
+        matrix[parseInt(shipCells[x].id)].filled = true
+        matrix[parseInt(shipCells[x].id)].type = ship
+            
+    }
 
-        for(x = 0;x<shipCells.length;x++){
-            matrix[shipCells[x].id].filled = true
-            matrix[shipCells[x].id].type = ship
+    //print the matrix filled cells
+    for(y = 0;y<matrix.length;y++){
+        if(matrix[y].filled){
+            console.log(y)
         }
-
-        //print the matrix filled cells
-        for(y = 0;y<matrix.length;y++){
-            if(matrix[y].filled){
-                console.log(y)
-            }
-        }
+    }
         
 }
 
