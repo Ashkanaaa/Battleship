@@ -17,10 +17,6 @@ main{
     grid-template-rows: 1fr 4fr;
 }
 
-button{
-  
-    padding: 5px;    
-}
 
 header{
     background-image: url("ship.jpg");
@@ -44,11 +40,11 @@ header h1{
 }
 .Left{
     grid-area: Player;
-    background-color: aqua;
+    background-color: #68AEB8;
 }
 .Right{
     grid-area: Enemy;
-    background-color: blueviolet;
+    background-color:  #68AEB8;
 }
 .Grid{
     background-color: aliceblue;
@@ -58,7 +54,7 @@ header h1{
 }
 .Middle{
     grid-area: GameInfo;
-    background-color: brown;
+   
 }
 
 
@@ -77,8 +73,10 @@ header h1{
     width: 45px;
     height: 45px;
 }
+
 .GameInfo{
-    background-color: darkgoldenrod;
+    background-color:#18130E;
+    color: #8bf688;
     text-align: center;
     font-size: smaller;
     width: 400px;
@@ -91,9 +89,33 @@ header h1{
 }
 
 .Button-Section{
-    background-color: green;
+    background-color: #667c3e;
+    
 }
 
+#ready-b{
+    background-color: rgb(165, 169, 160);
+    margin-left: 25%;
+    width: 100px;
+}
+
+#randomize-b{
+    background-color: rgb(165, 169, 160);
+    width: 100px;
+}
+
+#position-B{
+    background-color: red;
+    width: 200px;
+    margin-top: 2%;
+    margin-left: 25%;
+}
+
+
+button{
+  
+    padding: 5px;    
+}
 
 .Ships{
     background-color: white;
@@ -101,13 +123,6 @@ header h1{
     
 }
 
-.square {
-    width: 45px;
-    height: 45px;
-    background-color: #ff69b4; /* Pink color for squares */
-    border: 1px solid black; /* Border to visualize the squares */
-    
-  }
 
 .Carrier{
     width: 225px;
@@ -156,12 +171,6 @@ header h1{
     */
 }
 
-.Position-B{
-    background-color: chartreuse;
-    width: 80%;
-    margin-top: 2%;
-    margin-left: 10%;
-}
 
 .Grey{
     background-color:rgb(100, 106, 115)
