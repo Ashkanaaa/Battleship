@@ -126,10 +126,10 @@ function dragStart(e){
 }
 
 
-
 function dragOver(e){
     e.preventDefault();
 }
+
 
 function drop(e){
     const startCell = parseInt(e.target.id) //getting the cell id that the ship is being dropped
