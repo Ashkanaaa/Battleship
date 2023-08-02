@@ -3,7 +3,7 @@ var dragging;
 var firstTime
 removedShips = []
 var Randomized = false
-
+//hi there
 
 
 //////////////////////////////////////// Matrix
