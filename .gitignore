@@ -1,3 +1,2 @@
-./venv
-.idea
-app/__pycache__/
+myenv/
+.gitignore
