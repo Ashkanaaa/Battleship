@@ -1,6 +1,4 @@
 # The Classic BattleShip Game
-check
-
 
 
 # ToDo
