@@ -3,8 +3,7 @@ var dragging;
 var firstTime
 removedShips = []
 var Randomized = false
-//hi there
-
+var Ready = false //set to true when all the ships have been placed
 
 //////////////////////////////////////// Matrix
 matrix = []
@@ -65,9 +64,15 @@ function generateGrid(side){
         cell.classList.add('cell')
         cell.id = x + side;
         board.appendChild(cell);
-        cell.addEventListener('click', gridEventListener);
-        cell.addEventListener('dragover', dragOver);
-        cell.addEventListener('drop', drop);
+        if(side == "Player"){
+            //cell.addEventListener('click', gridEventListener);
+            cell.addEventListener('dragover', dragOver);
+            cell.addEventListener('drop', drop);
+        }else{
+            cell.addEventListener('click', hit)
+
+        }
+        
     }
 }
 
@@ -81,6 +86,9 @@ function addEventListener(){
 
     const randFleet = document.getElementById("randomize-b");
     randFleet.addEventListener('click', randomizeFleet)
+
+    const readyB = document.getElementById("ready-b")
+    readyB.addEventListener('click', readyToPlay)
 
     //event listener for ships
     const ship1 = document.getElementsByClassName("Carrier")[0]
@@ -118,6 +126,9 @@ function randomizeFleet(){
         });
 
         Randomized = true
+        Ready = true
+
+        
     }
 }
 
@@ -157,8 +168,17 @@ function drop(e){
             removedShips.push(ship.name) //add the name of the ship to the removed ship so that "changeFleetPosition doesnt include it when switching from vertical to horizontal
             dragging.remove()
             Randomized = true // set Randomized to true to disable the randomized button after the first ship had been dropped
+            if(removedShips.length == 5){
+                Ready = true
+            }
         }
     }
+}
+
+function hit(e){
+    hitcell = parseInt((e.targetElement || e.srcElement).id)
+    console.log("hit" + hitcell)
+    socket.emit("hit",hitcell)
 }
 
 //chenging the fleet position from vertical to horizontal
@@ -289,9 +309,25 @@ function addToMatrix(shipCells, ship){
         
 }
 
+function readyToPlay(){
+    if(Ready){
+        const convertedMatrix = matrix.map(block => {
+            return {
+              filled: block.filled,
+              type: block.type,
+              hit: block.hit,
+              // Add other attributes of the 'Block' object here if needed
+            };
+          });
+        socket.emit("ready",convertedMatrix)
+    }
+    
+}
+
 //assigns the function gameInit to the onload event of the window object
 window.onload = gameInit;
 
 
 
-
+const socket = io({autoConnect:false})//making the socket object and setting autoConnetcted to false so that it does not connect automatically
+socket.connect()//connecting the client to server manually
