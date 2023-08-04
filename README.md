@@ -1,8 +1,6 @@
 # The Classic BattleShip Game
 
 
-
-
 # ToDo
 
 - Init Project

@@ -4,6 +4,8 @@ var firstTime
 removedShips = []
 var Randomized = false
 
+
+
 //////////////////////////////////////// Matrix
 matrix = []
 
