@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect,url_for, request, session
 from flask_socketio import SocketIO,join_room,leave_room,send,emit
 from string import ascii_uppercase
 from datetime import timedelta
-import random
+import random, json
 
 from __init__ import createApp, createSio
 from game import  handle_ready,setUpData,handle_fire,sendMsg
@@ -14,6 +14,7 @@ app.permanent_session_lifetime = timedelta(minutes=1)
 
 
 rooms = {}
+singleplayers = []
 
 def generateCode(length):
     while True:
@@ -27,6 +28,13 @@ def generateCode(length):
 @app.route("/", methods=["POST","GET"])
 def home():
     return render_template("menu.html")
+
+@app.route("/singleplayer")
+def singlePlayer():
+    print("fetched")
+
+    return render_template("index.html")
+
 
 @app.route("/room", methods=["POST","GET"])
 def room():
@@ -69,11 +77,8 @@ def game():
     if room is None or session.get("name") is None or room not in rooms:
         return redirect(url_for("room")) 
     
-    return render_template("index.html")
+    return render_template("index.html", singleplayer=False)
 
-@app.route("/singleplayer")
-def singleplayer():
-    return render_template("index.html")
 
 
 @sio.on("connect")
@@ -82,8 +87,11 @@ def connect(auth):
     room = session.get("room")
     name = session.get("name")
     if not room or not name:
+        print("SINGLEPLAYER")
+        singleplayers.append(request.sid)
         return
     if room not in rooms:
+        print("SINGLEPLAYER22222")
         leave_room(room)
         return
     else:
@@ -104,23 +112,29 @@ def connect(auth):
 
 @sio.on("disconnect")
 def disconnect():
-    print("desiconnected")
-    room = session.get("room")
-    name = session.get("name")
-    print("room to be left: " + room)
-    leave_room(room)
-    
-    
-    #if room is empty distroy it
-    if room in rooms:
-        print("room exists")
-        rooms[room]["members"] -= 1
-        if rooms[room]["members"] <=0:
-            print("room deleted:" + room)
-            del rooms[room]
+    #is its multiplayer leave the room and remove the room if no player  is present in it
+    if request.sid not in singleplayers:
+        print("desiconnected")
+        room = session.get("room")
+        name = session.get("name")
+        print("room to be left: " + room)
+        leave_room(room)
+        
+        
+        #if room is empty distroy it
+        if room in rooms:
+            print("room exists")
+            rooms[room]["members"] -= 1
+            if rooms[room]["members"] <=0:
+                print("room deleted:" + room)
+                del rooms[room]
 
-    #send({"name": name, "message": "has entered the game" }, to=room)
-    print(f"{name} has left the room {room}")
+        #send({"name": name, "message": "has entered the game" }, to=room)
+        print(f"{name} has left the room {room}")
+    #if single player, just remove the sid from the singleplayer list
+    else:
+        print("desiconnected singleplayer")
+        singleplayers.remove(request.sid)
 
 @sio.on('gameinfo_message')
 def handle_message(message):

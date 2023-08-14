@@ -7,7 +7,25 @@ var Ready = false //set to true when all the ships have been placed
 var Joined = false //if other player has joined you can push the ready button if not, you have to wait  for the player to join
 var Startgame = false //set to true when both sides have  hit their ready botton
 var Mute = false
+var Singleplayer
 //////////////////////////////////////// Matrix
+// if(m.singleplayer == true){
+//     console.log(m.het)
+// }
+
+var queryParams = new URLSearchParams(window.location.search);
+        
+// Get the value of the 'singlePlayer' parameter
+var singlePlayerValue = queryParams.get("single");
+console.log(singlePlayerValue)
+if (singlePlayerValue === "1") {
+    Singleplayer = true
+    console.log("Single true")
+} else {
+    Singleplayer = false
+    console.log("Single false")
+    
+}
 matrix = []
 
 class Block{
@@ -328,6 +346,8 @@ function mute(){
     }
     Mute = !Mute
 }
+////////singleplayer
+
 
 //////////////////////////////////////// Socketio
 
@@ -469,5 +489,4 @@ window.onload = gameInit;
 
 // const socket = io({autoConnect:false})//making the socket object and setting autoConnetcted to false so that it does not connect automatically
 // socket.connect()//connecting the client to server manually
-
 
