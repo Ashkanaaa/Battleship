@@ -106,12 +106,24 @@ header h1{
 }
 
 #position-B{
-    background-color: red;
+    background-color: rgb(165, 169, 160);
     width: 200px;
     margin-top: 2%;
     margin-left: 25%;
 }
 
+#mute-b{
+    margin-top: 45%;
+    width: 20%; /* Set width as a percentage of the parent container */
+    padding-top: 20%; /* Set height as a percentage of the width to maintain a perfect circle */
+    border-radius: 50%; /* Make the button circular */
+    background-image: url('mute.jpg');
+    background-size: cover; /* Adjust background size */
+    background-position: center;
+    color: #fff; /* Set text color */
+    border: none; /* Remove border */
+    cursor: pointer;
+}
 
 button{
   

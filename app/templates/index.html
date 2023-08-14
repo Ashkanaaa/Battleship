@@ -20,19 +20,18 @@
             </div>
         </section>
         <section class="Middle">
+            
             <div class="GameInfo">
-              <h2>Game Information</h2>
-              <h3>Player</h3>
-              <p>Remaining Fleet:<p>
-              <h3>Enemy</h3>
-              <p>Remaining Fleet:</p>
+                <h2>Game Information</h2>
+                <h3 id="roomID"></h3>
+                <h4 id="dynamic_info"></h4>
+                <button id="mute-b"></button>
             </div>
             <div class="Button-Section"> 
               <button id="ready-b">Ready</button>
               <button id="randomize-b">Randomize</button>
-              <button id="position-B">
-                Vertical
-             </button>  
+              
+              <button id="position-B">Vertical</button>  
             </div>
             
             <div class="Ships">
@@ -64,7 +63,10 @@
    
     </main>
 
-
+    <script>
+        var socket = io();
+    </script>
+    
     <script src="../static/app.js"></script>
 </body>
 </html>

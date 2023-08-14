@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <title>Main Menu</title>
+</head>
+</body>
+<h1>Start The Game</h1>
+
+<form method="POST" class="Login">
+    <div>
+        <label for name>Name:</label>
+        <input type="text" placeholder="Pick a name!" name="name" value="{{name}}"/>
+    </div>
+
+    <div class="Join">
+        <input type="text" placeholder="Session Code" name="code" value="{{code}}"/>
+        <button type="submit" name="join" >Join a Session</button>
+    </div>
+    <button type="submit" name="create" class="Create-b">Create a Session</button>
+    {% if error %}
+    <ul>
+        <li>{{error}}</li>
+    </ul>
+    {% endif %}
+</form>
+
+
+
+
+<script src="../static/app.js"></script>
+</body>
+</html>

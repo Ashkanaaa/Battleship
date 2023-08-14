@@ -4,7 +4,9 @@ var firstTime
 removedShips = []
 var Randomized = false
 var Ready = false //set to true when all the ships have been placed
-
+var Joined = false //if other player has joined you can push the ready button if not, you have to wait  for the player to join
+var Startgame = false //set to true when both sides have  hit their ready botton
+var Mute = false
 //////////////////////////////////////// Matrix
 matrix = []
 
@@ -69,7 +71,7 @@ function generateGrid(side){
             cell.addEventListener('dragover', dragOver);
             cell.addEventListener('drop', drop);
         }else{
-            cell.addEventListener('click', hit)
+            cell.addEventListener('click', fire)
 
         }
         
@@ -90,6 +92,8 @@ function addEventListener(){
     const readyB = document.getElementById("ready-b")
     readyB.addEventListener('click', readyToPlay)
 
+    const muteB = document.getElementById("mute-b")
+    muteB.addEventListener('click', mute)
     //event listener for ships
     const ship1 = document.getElementsByClassName("Carrier")[0]
     ship1.addEventListener('dragstart', dragStart)
@@ -125,8 +129,8 @@ function randomizeFleet(){
             element.remove()
         });
 
-        Randomized = true
-        Ready = true
+        Randomized = true //when randomized once the botton cant be hit again and the ship placments will remain the same
+        Ready = true //when randomized ready is set to true since all the ships are placed
 
         
     }
@@ -136,6 +140,7 @@ function randomizeFleet(){
 function dragStart(e){
     dragging = e.target
     dropped = true
+    console.log("started dragging")
 }
 
 
@@ -158,6 +163,13 @@ function drop(e){
             break
         }
     }
+
+    //prevent the sip that was already drropped change position again
+    if(removedShips.includes(ship.name)){
+        console.log("cough")
+        found = false
+    }
+
     //checks
     if(!found){
         console.log("ERROR: ship was not found")
@@ -173,12 +185,6 @@ function drop(e){
             }
         }
     }
-}
-
-function hit(e){
-    hitcell = parseInt((e.targetElement || e.srcElement).id)
-    console.log("hit" + hitcell)
-    socket.emit("hit",hitcell)
 }
 
 //chenging the fleet position from vertical to horizontal
@@ -309,25 +315,159 @@ function addToMatrix(shipCells, ship){
         
 }
 
+function mute(){
+    var element = document.getElementById("mute-b")
+    if(Mute){
+        element.style.backgroundImage = "url(../static/mute.jpg)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+    }else{
+        element.style.backgroundImage = "url(../static/unmute.png)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+    }
+    Mute = !Mute
+}
+
+//////////////////////////////////////// Socketio
+
+
+
 function readyToPlay(){
-    if(Ready){
-        const convertedMatrix = matrix.map(block => {
-            return {
-              filled: block.filled,
-              type: block.type,
-              hit: block.hit,
-              // Add other attributes of the 'Block' object here if needed
-            };
-          });
+    //if ships were placed and other player has joined
+    
+    
+    if(Ready  && Joined){
+        
+        element = document.getElementById('ready-b')
+        element.style.backgroundColor = 'green'
+        
+        var convertedMatrix = JSON.stringify(matrix)
         socket.emit("ready",convertedMatrix)
     }
     
 }
+
+socket.on('damage',data=>{
+    
+    if(data.side == 'player'){
+        console.log("hit-player")
+        //playing sound when your ship is hit
+        if(!Mute){
+            audio = new Audio("../static/hit-player.mp3")
+            audio.play()
+        }
+        
+
+        //adding fire to the cell that was hit
+        elementId = data.hitcell + 'Player'
+        element = document.getElementById(elementId)
+        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+        
+    }else if(data.side == 'enemy'){
+        console.log("hit-enemy")
+
+        //playing sound when you him enemy`s ship
+        if(!Mute){
+            audio = new Audio("../static/hit-enemy.mp3")
+            audio.play()
+        }
+        
+        //if the ship is fully drown, color the corresponding cell on the enemy board
+        if(data.array !==null && data.enemyShipColor !== null){
+            data.array.forEach((cell)=>{
+                elementId = cell + 'Enemy'
+                element = document.getElementById(elementId)
+                element.classList.add(data.enemyShipColor)
+            })
+        }
+        
+        elementId = data.hitcell + 'Enemy'
+        element = document.getElementById(elementId)
+        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+    }
+})
+
+socket.on('missed',data=>{
+
+    if(data.side == 'player'){
+        elementId = data.hitcell + 'Player'
+        element = document.getElementById(elementId)
+        console.log(element)
+        element.style.backgroundColor = "#68AEB8";
+        element.style.borderColor = "#68AEB8"
+    }else if(data.side == 'enemy'){
+        elementId = data.hitcell + 'Enemy'
+        element = document.getElementById(elementId)
+        console.log(element)
+        element.style.backgroundColor = "#68AEB8";
+        element.style.borderColor = "#68AEB8"
+    }
+    if(!Mute){
+        audio = new Audio("../static/missed.mp3")
+        audio.play()
+    }
+    
+})
+
+
+
+socket.on('gameinfo_message', message => {
+    // Update the content of the messageDiv with the received message
+    if (message) {
+        // Update the content of the messageDiv with the received message
+        var messageDiv = document.getElementById('dynamic_info')
+        //console.log("this is message: " + message);
+        messageDiv.innerHTML = '<p>' + message + '</p>';
+    } else {
+        // Handle the absence of a message (optional)
+        console.log("No message received from the server.");
+    }
+});
+
+socket.on('joined',data=>{
+    Joined = true
+});
+
+socket.on('startgame', data=>{
+    Startgame = true
+});
+
+function fire(e){
+    hitcell = parseInt((e.targetElement || e.srcElement).id)
+    console.log("hit" + hitcell)
+    if(Startgame){
+        socket.emit('fire',hitcell)
+    }
+    //socket.emit('fire',hitcell)
+}
+
+socket.on('connect', message => {
+    // Update the content of the messageDiv with the received message
+    if (message) {
+        // Update the content of the messageDiv with the received message
+        var messageDiv = document.getElementById("roomID");
+        console.log("this is message: " + message);
+        messageDiv.innerHTML += '<p>' + message + '</p>';
+    } else {
+        // Handle the absence of a message (optional)
+        console.log("No message received from the server.");
+    }
+});
+
+
+
 
 //assigns the function gameInit to the onload event of the window object
 window.onload = gameInit;
 
 
 
-const socket = io({autoConnect:false})//making the socket object and setting autoConnetcted to false so that it does not connect automatically
-socket.connect()//connecting the client to server manually
+// const socket = io({autoConnect:false})//making the socket object and setting autoConnetcted to false so that it does not connect automatically
+// socket.connect()//connecting the client to server manually
+
+
