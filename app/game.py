@@ -162,7 +162,9 @@ def damaged (sid,hitcell):
 
 def gameOver(sid):
     sendMsg(sid, 'GameOver! Congrats, You have WON!!!', False )    
+    emit('victory', to=sid)
     sendMsg(opponent(sid), 'GameOver! You have LOST!!!', False )
+    emit('defeat',to=opponent(sid))
 
 
 def handle_fire(sid,hitcell):

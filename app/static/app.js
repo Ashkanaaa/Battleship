@@ -409,16 +409,10 @@ function gameOver(){
     //user has won
     if(Turn){
         printMessage('GameOver! Congrats, You have WON!!!')
-        if(!Mute){
-            audio = new Audio("../static/victory.mp3")
-            audio.play()
-        }
+        playSound('../static/effects/victory.mp3')
     }else{ //computer has won
         printMessage('GameOver! You have LOST!!!')
-        if(!Mute){
-            audio = new Audio("../static/lost.mp3")
-            audio.play()
-        }
+        playSound('../static/effects/lost.mp3')
     }
     Startgame = false
 }
@@ -440,11 +434,11 @@ function fire(e){
 function mute(){
     var element = document.getElementById("mute-b")
     if(Mute){
-        element.style.backgroundImage = "url(../static/mute.jpg)"
+        element.style.backgroundImage = "url(../static/effects/mute.jpg)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
     }else{
-        element.style.backgroundImage = "url(../static/unmute.png)"
+        element.style.backgroundImage = "url(../static/effects/unmute.png)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
     }
@@ -455,6 +449,13 @@ function printMessage(msg){
     var messageDiv = document.getElementById('dynamic_info')
     //console.log("this is message: " + message);
     messageDiv.innerHTML = '<p>' + msg + '</p>';
+}
+
+function playSound(path){
+    if(!Mute){
+        audio = new Audio(path)
+        audio.play()
+    }
 }
 
 ///////////////////////////////////////////Singleplayer
@@ -526,15 +527,12 @@ function hit(hitcell,computer){
 function singleDamage(hitcell,computer){
     if(computer){
         //playing the sound
-        if(!Mute){
-            audio = new Audio("../static/hit-player.mp3")
-            audio.play()
-        }
+        playSound('../static/effects/hit-player.mp3')
 
         //putting fire gif on the cell
         elementId = hitcell + 'Player'
         element = document.getElementById(elementId)
-        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundImage = "url(../static/effects/fire.gif)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
 
@@ -551,15 +549,12 @@ function singleDamage(hitcell,computer){
 
     }else{
         //playing the sound
-        if(!Mute){
-            audio = new Audio("../static/hit-enemy.mp3")
-            audio.play()
-        }
+        playSound('../static/effects/hit-enemy.mp3')
 
         //putting fire gif on the cell 
         elementId = hitcell + 'Enemy'
         element = document.getElementById(elementId)
-        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundImage = "url(../static/effects/fire.gif)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
         
@@ -602,10 +597,7 @@ function singleMissed(hitcell,computer){
         element.style.borderColor = "#68AEB8"
         printMessage('You have missed!')
     }
-    if(!Mute){
-        audio = new Audio("../static/missed.mp3")
-        audio.play()
-    }
+    playSound('../static/effects/missed.mp3')
 }
 
 function computerFire(){
@@ -622,32 +614,21 @@ function computerFire(){
 }
 //////////////////////////////////////// Socketio
 socket.on('damage',data=>{
-    
     if(data.side == 'player'){
-        console.log("hit-player")
         //playing sound when your ship is hit
-        if(!Mute){
-            audio = new Audio("../static/hit-player.mp3")
-            audio.play()
-        }
-        
+        playSound('../static/effects/hit-player.mp3')
 
         //adding fire to the cell that was hit
         elementId = data.hitcell + 'Player'
         element = document.getElementById(elementId)
-        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundImage = "url(../static/effects/fire.gif)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
         
     }else if(data.side == 'enemy'){
-        console.log("hit-enemy")
-
         //playing sound when you him enemy`s ship
-        if(!Mute){
-            audio = new Audio("../static/hit-enemy.mp3")
-            audio.play()
-        }
-        
+        playSound('../static/effects/hit-enemy.mp3')
+
         //if the ship is fully drown, color the corresponding cell on the enemy board
         if(data.array !==null && data.enemyShipColor !== null){
             data.array.forEach((cell)=>{
@@ -659,7 +640,7 @@ socket.on('damage',data=>{
         
         elementId = data.hitcell + 'Enemy'
         element = document.getElementById(elementId)
-        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundImage = "url(../static/effects/fire.gif)"
         element.style.backgroundSize = "cover"
         element.style.backgroundRepeat = "no-repeat"
     }
@@ -680,11 +661,7 @@ socket.on('missed',data=>{
         element.style.backgroundColor = "#68AEB8";
         element.style.borderColor = "#68AEB8"
     }
-    if(!Mute){
-        audio = new Audio("../static/missed.mp3")
-        audio.play()
-    }
-    
+    playSound('../static/effects/missed.mp3')
 })
 
 
@@ -723,9 +700,13 @@ socket.on('connect', message => {
     }
 });
 
+socket.on('victory', () => {
+    playSound('../static/effects/victory.mp3')
+})
 
-
-
+socket.on('defeat', () => {
+    playSound('../static/effects/defeat.mp3')
+})
 //assigns the function gameInit to the onload event of the window object
 window.onload = gameInit;
 

@@ -20,7 +20,7 @@ main{
 
 
 header{
-    background-image: url("ship.jpg");
+    background-image: url("effects/ship.jpg");
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -117,7 +117,7 @@ header h1{
     width: 20%; /* Set width as a percentage of the parent container */
     padding-top: 20%; /* Set height as a percentage of the width to maintain a perfect circle */
     border-radius: 50%; /* Make the button circular */
-    background-image: url('mute.jpg');
+    background-image: url('effects/mute.jpg');
     background-size: cover; /* Adjust background size */
     background-position: center;
     color: #fff; /* Set text color */
