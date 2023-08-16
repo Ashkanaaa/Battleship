@@ -1,32 +1,39 @@
-var Vertical;
-var dragging;
-var firstTime
-removedShips = []
+var Vertical // position of the ship
+var Dragging // ship html element that is being dragged
 var Randomized = false
 var Ready = false //set to true when all the ships have been placed
 var Joined = false //if other player has joined you can push the ready button if not, you have to wait  for the player to join
 var Startgame = false //set to true when both sides have  hit their ready botton
 var Mute = false
-var Singleplayer
-//////////////////////////////////////// Matrix
-// if(m.singleplayer == true){
-//     console.log(m.het)
-// }
+var Singleplayer //true if its singleplayer mode
+var Turn //true if its player`s turn in single player mode
+removedShips = [] // list of ships that are dropped successfully on the grid
 
-var queryParams = new URLSearchParams(window.location.search);
-        
-// Get the value of the 'singlePlayer' parameter
-var singlePlayerValue = queryParams.get("single");
-console.log(singlePlayerValue)
-if (singlePlayerValue === "1") {
-    Singleplayer = true
-    console.log("Single true")
-} else {
-    Singleplayer = false
-    console.log("Single false")
-    
+//////////////////////////////////////// SinglePlayer data
+
+//cells that were hit by computer (integers in range of [0,99])
+computer_hits = []
+
+//keeping track of how much of the ship is sunk for user
+userShipCount = {
+    'Carrier': 0,
+    'Battleship': 0,
+    'Submarine': 0,
+    'Destroyer':0,
+    'Cruiser':0
 }
+//keeping track of how much of the ship is sunk for computer
+computerShipCount = {
+    'Carrier': 0,
+    'Battleship': 0,
+    'Submarine': 0,
+    'Destroyer':0,
+    'Cruiser':0
+};
+
+//////////////////////////////////////// Matrices initialazation
 matrix = []
+computer_matrix = []
 
 class Block{
     constructor(filled,type,hit){
@@ -36,10 +43,12 @@ class Block{
     }
 }
 
-
+//initializing player`s and computer`s matrix with Block objects
 for (let i = 0; i < 100; i++) {
-    const block = new Block(false, null, false); // Provide initial values for filled, type, and hit
+    const block = new Block(false, null, false) // Provide initial values for filled, type, and hit
+    const computer_block = new Block(false, null, false) //making seperate block objects to prevent both matrices to store refrence to the same Block object 
     matrix.push(block);
+    computer_matrix.push(computer_block)
   }
 
 //////////////////////////////////////// Ships
@@ -62,19 +71,39 @@ const cruiser = new Ship('Cruiser',2, 'Green')
 const ships = [carrier,battleship,submarine,destroyer,cruiser]
 var dropped //whether the ship was dropped successfully on the board
 
-
-//////////////////////////////////////// Functions
-
-function gameInit(){
-    console.log("salam");
-    generateGrid("Enemy");
-    generateGrid("Player");
-
-    Vertical = false;
-    addEventListener()
+//////////////////////////////////////// Game Functions
+function gridEventListener(event) {
+    console.log((event.targetElement || event.srcElement).id);
 }
 
+function gameInit(){
+    console.log("salam")
+    generateGrid("Enemy")
+    generateGrid("Player")
+    addEventListener()
+    setPlayerMode()
+    Vertical = false;
+    
+    
+}
 
+//declaring whether its single or multiplayer and taking actions accordingly
+function setPlayerMode(){
+
+    var queryParams = new URLSearchParams(window.location.search);
+    // Get the value of the 'singlePlayer' parameter
+    var singlePlayerValue = queryParams.get("single");
+    console.log(singlePlayerValue)
+    if (singlePlayerValue === "1") {
+        Singleplayer = true
+        randomizeFleet(true)
+        Turn = true
+        console.log("Single true")
+    } else {
+        Singleplayer = false
+        console.log("Single false")
+    }
+}
 function generateGrid(side){
     
     id = side+"Grid";
@@ -96,16 +125,13 @@ function generateGrid(side){
     }
 }
 
-function gridEventListener(event) {
-    console.log((event.targetElement || event.srcElement).id);
-}
 
 function addEventListener(){
     const fleetpos = document.getElementById("position-B")
     fleetpos.addEventListener('click', changeFleetPosition);
 
     const randFleet = document.getElementById("randomize-b");
-    randFleet.addEventListener('click', randomizeFleet)
+    randFleet.addEventListener('click', ()=>randomizeFleet(false))
 
     const readyB = document.getElementById("ready-b")
     readyB.addEventListener('click', readyToPlay)
@@ -138,25 +164,28 @@ function addEventListener(){
 
 }
 
-function randomizeFleet(){
-    if(!Randomized){
-        ships.forEach(ship => addShip(true,ship))
-    
-        ships.forEach((ship) => {
-            element = document.getElementsByClassName(ship.name)[0]
-            element.remove()
-        });
+function randomizeFleet(computer){
 
+    if(computer){
+        //placing ships on the enemy`s grid
+        ships.forEach(ship => addShip(true,ship, null,true))
+    }else if(!Randomized){
+        //placing the ships on the player grid
+        ships.forEach(ship => addShip(true,ship, null, false))
+        //removing ships that are placed from the middle section
+        ships.forEach((ship) => {
+                element = document.getElementsByClassName(ship.name)[0]
+                element.remove()
+        })
+    
         Randomized = true //when randomized once the botton cant be hit again and the ship placments will remain the same
         Ready = true //when randomized ready is set to true since all the ships are placed
-
-        
     }
 }
 
 
 function dragStart(e){
-    dragging = e.target
+    Dragging = e.target
     dropped = true
     console.log("started dragging")
 }
@@ -174,7 +203,7 @@ function drop(e){
     let found = false
     for(x =0;x<ships.length;x++){
         
-        if(dragging.classList.contains(ships[x].name)){
+        if(Dragging.classList.contains(ships[x].name)){
             ship = ships[x]
             //console.log(ship.name)
             found = true
@@ -192,14 +221,14 @@ function drop(e){
     if(!found){
         console.log("ERROR: ship was not found")
     }else{
-        addShip(false,ship, startCell)
+        addShip(false,ship, startCell, false)
         //if dropped successfully then remove the ship
         if(dropped){
             removedShips.push(ship.name) //add the name of the ship to the removed ship so that "changeFleetPosition doesnt include it when switching from vertical to horizontal
-            dragging.remove()
+            Dragging.remove()
             Randomized = true // set Randomized to true to disable the randomized button after the first ship had been dropped
             if(removedShips.length == 5){
-                Ready = true
+                Ready = true //set ready to true if all the ships have been placed
             }
         }
     }
@@ -248,9 +277,16 @@ function changeShipPos(target){
     target.style.width = heightValue;
 }
  
-function addShip(rand,ship,startCell){
-    //selecting all the cells
-    const cells = document.querySelectorAll('#PlayerGrid div')
+function addShip(rand,ship,startCell, computer){
+    //selecting all the cells depending on if its singleplayer or multiplayer
+    let cells
+    if(computer){
+        cells = document.querySelectorAll('#EnemyGrid div')
+    }else{
+        cells = document.querySelectorAll('#PlayerGrid div')
+    }
+    // console.log("cells")
+    // console.log(cells)
     if (rand) {
         let randIndex = Math.floor(Math.random() * 100) //randdom number [0,100)
         let randPos = Math.random() < 0.5 //randomize the position of the ship
@@ -282,7 +318,9 @@ function addShip(rand,ship,startCell){
             shipCells.push(cells[Number(startIndex)+x])
         }
     }
-    //console.log(shipCells)
+    console.log("shipCells")
+
+    console.log(shipCells)
 
     
     //preventing ships to extend horizontally
@@ -290,26 +328,27 @@ function addShip(rand,ship,startCell){
     
     if(!Vertical){
         let index = parseInt(startIndex/10) * 10
-        // console.log("index: " + index)
-        // console.log("RRRRRRRR INDEX: " + randIndex)
         if((index + (10 - ship.size)) < startIndex){
             valid = false
-            //console.log("its false")
         }
     }
 
     const notFilled = shipCells.every(shipCell => !shipCell.classList.contains('filled'))
 
+    //if the placment is valid
     if(valid && notFilled){
         shipCells.forEach(shipCell=>{
-            shipCell.classList.add(ship.color)
+            if(!computer){
+                shipCell.classList.add(ship.color)
+            }
             shipCell.classList.add('filled')
+            //shipCell.classList.add(ship.color)//remove later
           })
-          addToMatrix(shipCells, ship)
+          addToMatrix(shipCells, ship, computer)
           //console.log("ShipCells: "+shipCells)
     }else{
         if(rand){
-            addShip(true,ship)
+            addShip(true,ship, null, computer)
         }else{
             dropped = false
         }
@@ -317,20 +356,85 @@ function addShip(rand,ship,startCell){
 
 }
 
-function addToMatrix(shipCells, ship){
+function addToMatrix(shipCells, ship, computer){
     for(x = 0;x<shipCells.length;x++){
-        matrix[parseInt(shipCells[x].id)].filled = true
-        matrix[parseInt(shipCells[x].id)].type = ship
-            
-    }
-
-    //print the matrix filled cells
-    for(y = 0;y<matrix.length;y++){
-        if(matrix[y].filled){
-            console.log(y)
+        if(computer){
+            console.log("correct")
+            computer_matrix[parseInt(shipCells[x].id)].filled = true
+            computer_matrix[parseInt(shipCells[x].id)].type = ship
+        }else{
+            console.log("wrong")
+            matrix[parseInt(shipCells[x].id)].filled = true
+            matrix[parseInt(shipCells[x].id)].type = ship
         }
     }
+
+    for(y = 0;y<matrix.length;y++){
+        if(computer_matrix[y].filled){
+            console.log(y)
+            console.log(computer_matrix[y])
+        }
+    }
+    // console.log("pleyer matrix:")
+    // //print the matrix filled cells
+    // for(y = 0;y<matrix.length;y++){
+    //     if(matrix[y].filled){
+    //         console.log(y)
+    //     }
+    // }
         
+}
+
+function readyToPlay(){
+    //if ships were placed and other player has joined
+    
+    if(Ready && Singleplayer){
+        element = document.getElementById('ready-b')
+        element.style.backgroundColor = 'green'
+        Startgame = true //starting the game
+        printMessage("Game Started! Take the first Shot!")
+    }else if(Ready  && Joined){
+        
+        element = document.getElementById('ready-b')
+        element.style.backgroundColor = 'green'
+        
+        
+        let convertedMatrix = JSON.stringify(matrix)
+        socket.emit("ready",convertedMatrix)
+    }
+    
+}
+
+function gameOver(){
+    //user has won
+    if(Turn){
+        printMessage('GameOver! Congrats, You have WON!!!')
+        if(!Mute){
+            audio = new Audio("../static/victory.mp3")
+            audio.play()
+        }
+    }else{ //computer has won
+        printMessage('GameOver! You have LOST!!!')
+        if(!Mute){
+            audio = new Audio("../static/lost.mp3")
+            audio.play()
+        }
+    }
+    Startgame = false
+}
+
+function fire(e){
+    hitcell = parseInt((e.targetElement || e.srcElement).id)
+    console.log("hit" + hitcell)
+    if(Startgame){
+        if(Singleplayer){
+            hit(hitcell,false)
+        }else{
+            socket.emit('fire',hitcell)
+        }
+        
+    }
+    
 }
 
 function mute(){
@@ -346,28 +450,177 @@ function mute(){
     }
     Mute = !Mute
 }
-////////singleplayer
 
+function printMessage(msg){
+    var messageDiv = document.getElementById('dynamic_info')
+    //console.log("this is message: " + message);
+    messageDiv.innerHTML = '<p>' + msg + '</p>';
+}
 
-//////////////////////////////////////// Socketio
+///////////////////////////////////////////Singleplayer
 
-
-
-function readyToPlay(){
-    //if ships were placed and other player has joined
-    
-    
-    if(Ready  && Joined){
-        
-        element = document.getElementById('ready-b')
-        element.style.backgroundColor = 'green'
-        
-        var convertedMatrix = JSON.stringify(matrix)
-        socket.emit("ready",convertedMatrix)
+//switches the turns between computer and player
+function switchTurns() {
+    if(Mute){
+        setTimeout(function() {
+            Turn = !Turn;
+            // if turn is false, computer fires
+            if (!Turn) {
+                computerFire();
+            }
+        }, 1000); // Delay of 3000 milliseconds (3 seconds)
+    }else{
+        setTimeout(function() {
+            Turn = !Turn;
+            // if turn is false, computer fires
+            if (!Turn) {
+                computerFire();
+            }
+        }, 4000); // Delay of 3000 milliseconds (3 seconds)
     }
     
 }
 
+//find all the cells that contain a specific ship
+function findShip(shipname){
+    array = []
+    for (let x = 0; x < computer_matrix.length; x++) {
+        if(computer_matrix[x].filled && computer_matrix[x].type.name == shipname){
+           array.push(x)
+        }
+    }
+    console.log('findship works')
+    return array
+    
+}
+
+function hit(hitcell,computer){
+    if(computer){
+        if(matrix[hitcell].filled){
+            singleDamage(hitcell,true)
+        }else{
+            singleMissed(hitcell,true)
+        }
+        matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit
+        switchTurns() //switching the turn to user
+    }else{
+        //checking to see if its user`s turn
+        if(Turn){
+            if(computer_matrix[hitcell].hit){
+                printMessage("You have already hit this cell")
+            }else{
+                if(computer_matrix[hitcell].filled){
+                    singleDamage(hitcell,false)
+                }else{
+                    singleMissed(hitcell,false)   
+                }
+                computer_matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit 
+                switchTurns()//switching the turn to computer
+            }
+        }else{
+            printMessage("Not your turn yet!")
+        }
+    }   
+}
+
+function singleDamage(hitcell,computer){
+    if(computer){
+        //playing the sound
+        if(!Mute){
+            audio = new Audio("../static/hit-player.mp3")
+            audio.play()
+        }
+
+        //putting fire gif on the cell
+        elementId = hitcell + 'Player'
+        element = document.getElementById(elementId)
+        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+
+        //incrementing the ship that was hit
+        userShipCount[matrix[hitcell].type.name]++
+
+        //if user`s ship was drown
+        if(userShipCount[matrix[hitcell].type.name] == matrix[hitcell].type.size){
+            printMessage('Your ' + matrix[hitcell].type.name + ' was drown')
+        }else{
+            printMessage('Your ' + matrix[hitcell].type.name + ' was hit!')
+        }
+        
+
+    }else{
+        //playing the sound
+        if(!Mute){
+            audio = new Audio("../static/hit-enemy.mp3")
+            audio.play()
+        }
+
+        //putting fire gif on the cell 
+        elementId = hitcell + 'Enemy'
+        element = document.getElementById(elementId)
+        element.style.backgroundImage = "url(../static/fire.gif)"
+        element.style.backgroundSize = "cover"
+        element.style.backgroundRepeat = "no-repeat"
+        
+        //incrementing the ship that was hit
+        computerShipCount[computer_matrix[hitcell].type.name]++
+
+        //if the ship is fully drown, color the corresponding cell on the enemy board
+        if(computerShipCount[computer_matrix[hitcell].type.name] == computer_matrix[hitcell].type.size){
+            console.log('You have drown enemy`s')
+            console.log(computer_matrix[hitcell].type.name)
+            array = findShip(computer_matrix[hitcell].type.name)
+            array.forEach((cell)=>{
+                elementId = cell + 'Enemy'
+                element = document.getElementById(elementId)
+                element.classList.add(computer_matrix[cell].type.color)
+            })
+            console.log('You have drown enemy`s')
+            printMessage('You have drown enemy`s '  + computer_matrix[hitcell].type.name + ' ship')
+
+        }else{
+            printMessage('You have hit enemy`s ship!')
+        }
+    }
+}
+
+function singleMissed(hitcell,computer){
+
+    if(computer){
+        elementId = hitcell + 'Player'
+        element = document.getElementById(elementId)
+        console.log(element)
+        element.style.backgroundColor = "#68AEB8";
+        element.style.borderColor = "#68AEB8"
+        //printMessage('Your turn now!')
+    }else{
+        elementId = hitcell + 'Enemy'
+        element = document.getElementById(elementId)
+        console.log(element)
+        element.style.backgroundColor = "#68AEB8";
+        element.style.borderColor = "#68AEB8"
+        printMessage('You have missed!')
+    }
+    if(!Mute){
+        audio = new Audio("../static/missed.mp3")
+        audio.play()
+    }
+}
+
+function computerFire(){
+    const randomNumber = Math.floor(Math.random() * 100); // Generates a random integer between 0 and 99
+    console.log(randomNumber)
+    //if the number has been generated before the function gets called again
+    if(computer_hits.includes(randomNumber)){
+        computerFire()
+    }else{
+        computer_hits.push(randomNumber)
+        hit(randomNumber,true)
+    }
+
+}
+//////////////////////////////////////// Socketio
 socket.on('damage',data=>{
     
     if(data.side == 'player'){
@@ -457,15 +710,6 @@ socket.on('startgame', data=>{
     Startgame = true
 });
 
-function fire(e){
-    hitcell = parseInt((e.targetElement || e.srcElement).id)
-    console.log("hit" + hitcell)
-    if(Startgame){
-        socket.emit('fire',hitcell)
-    }
-    //socket.emit('fire',hitcell)
-}
-
 socket.on('connect', message => {
     // Update the content of the messageDiv with the received message
     if (message) {
@@ -489,4 +733,3 @@ window.onload = gameInit;
 
 // const socket = io({autoConnect:false})//making the socket object and setting autoConnetcted to false so that it does not connect automatically
 // socket.connect()//connecting the client to server manually
-

@@ -100,7 +100,7 @@ def missed(sid,hitcell):
     }
     emit('missed', info1, to=sid)
     emit('missed',info2, to=opponent(sid))
-    msg = 'you have missed!'
+    msg = 'You have missed!'
     sendMsg(sid, msg, False)
     switchTurns(sid)
 
@@ -147,14 +147,14 @@ def damaged (sid,hitcell):
         gameOver(sid)
     #if one opponent`s ship is fully drown    
     elif shipsize == 0:
-        msg = 'you have drown enemy`s ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' ship'
+        msg = 'You have drown enemy`s ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' ship'
         sendMsg(sid, msg, False)
-        msg2 = 'your ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' was drawn'
+        msg2 = 'Your ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' was drown'
         sendMsg(opponent(sid), msg2, False)
     elif shipsize > 0:
-        msg = 'you have hit enemy`s ship!'
+        msg = 'You have hit enemy`s ship!'
         sendMsg(sid, msg, False)
-        msg2 = 'your ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' was hit!'
+        msg2 = 'Your ' + data[opponent(sid)].matrix[hitcell]['type']['name'] + ' was hit!'
         sendMsg(opponent(sid), msg2, False)
 
     switchTurns(sid)
@@ -162,7 +162,7 @@ def damaged (sid,hitcell):
 
 def gameOver(sid):
     sendMsg(sid, 'GameOver! Congrats, You have WON!!!', False )    
-    sendMsg(opponent(sid), 'GameOver! You have LOST!!!', False )  
+    sendMsg(opponent(sid), 'GameOver! You have LOST!!!', False )
 
 
 def handle_fire(sid,hitcell):
