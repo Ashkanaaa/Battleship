@@ -8,7 +8,18 @@ var Mute = false
 var Singleplayer //true if its singleplayer mode
 var Turn //true if its player`s turn in single player mode
 removedShips = [] // list of ships that are dropped successfully on the grid
-
+var contHits //number of continous hits of compouter
+var contDirection //continous direction that should be hit
+var poppedItem //last item on the next_hit stack that includes a pair of number and direction {num,direction}
+var Keepstack
+var LastHitShip
+const next_hit = [] //last cell that was hit by computer
+const Directions = {
+    'North':-10,
+    'East' : 1,
+    'South':10,
+    'West':-1
+}
 //////////////////////////////////////// SinglePlayer data
 
 //cells that were hit by computer (integers in range of [0,99])
@@ -97,7 +108,10 @@ function setPlayerMode(){
     if (singlePlayerValue === "1") {
         Singleplayer = true
         randomizeFleet(true)
-        Turn = true
+        Turn = true //setting the turn to player 
+        contHits = 0 //setting the continous hits of computer to 0 initially
+        Keepstack = false
+        LastHitShip = ''
         console.log("Single true")
     } else {
         Singleplayer = false
@@ -498,9 +512,20 @@ function findShip(shipname){
 function hit(hitcell,computer){
     if(computer){
         if(matrix[hitcell].filled){
+            
+            if(matrix[hitcell].type.name == LastHitShip){
+                contHits = 2
+            }else{
+                Keepstack = true
+                contHits++
+            }
+            LastHitShip = matrix[hitcell].type.name
             singleDamage(hitcell,true)
+            console.log('contHits: ' + contHits)
         }else{
             singleMissed(hitcell,true)
+            
+                contHits = 0
         }
         matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit
         switchTurns() //switching the turn to user
@@ -542,6 +567,11 @@ function singleDamage(hitcell,computer){
         //if user`s ship was drown
         if(userShipCount[matrix[hitcell].type.name] == matrix[hitcell].type.size){
             printMessage('Your ' + matrix[hitcell].type.name + ' was drown')
+            if(!Keepstack){
+                next_hit.splice(0);
+                Keepstack = false
+            }
+            
         }else{
             printMessage('Your ' + matrix[hitcell].type.name + ' was hit!')
         }
@@ -601,16 +631,58 @@ function singleMissed(hitcell,computer){
 }
 
 function computerFire(){
-    const randomNumber = Math.floor(Math.random() * 100); // Generates a random integer between 0 and 99
-    console.log(randomNumber)
-    //if the number has been generated before the function gets called again
-    if(computer_hits.includes(randomNumber)){
-        computerFire()
-    }else{
-        computer_hits.push(randomNumber)
-        hit(randomNumber,true)
+    let hitcell
+    if(contHits == 1 ){
+        setDirections()
+    }else if(contHits > 1){
+        sameDirectionHit()
     }
 
+    //if stack has elements hit them first
+    if(next_hit.length != 0){
+        poppedItem  = next_hit.pop()
+        contDirection = poppedItem.direction //setting the direction of the next cell that is going to be hit
+        hitcell = poppedItem.num //setting hitcell to the next cell that is going to be hit
+    }else{
+        let randomNumber = Math.floor(Math.random() * 100); // Generates a random integer between 0 and 99
+        console.log(randomNumber)
+        //if the number has been generated before the function gets called again
+        while(computer_hits.includes(randomNumber)){
+            randomNumber = Math.floor(Math.random() * 100)
+        }
+        computer_hits.push(randomNumber) //pushing the number in computer_hits so that its not hit again
+        hitcell = randomNumber//setting hitcell to a random number that has not been hit
+    }
+    lastHit = hitcell //set the last hit to the corresponding cell
+    hit(hitcell,true) //call the hit function with the corresponding cell
+}
+
+function setDirections() {
+    for (const direction in Directions) {
+        const offset = Directions[direction];
+        const num = lastHit + offset;
+        
+        if (num >= 0 && num < 100 && !computer_hits.includes(num)) {
+            next_hit.push({ num, direction })
+            computer_hits.push(num)
+        }
+    }
+
+    console.log('Directions (Stack):');
+    console.log(next_hit);
+}
+
+
+
+function sameDirectionHit(){
+    console.log('same direction CALLEDDD')
+    num = lastHit + Directions[contDirection]
+    if (num >= 0 && num < 100 && !computer_hits.includes(num)) {
+        next_hit.push({ num, contDirection })
+        console.log('same direction')
+        console.log(num)
+        computer_hits.push(num)
+    }
 }
 //////////////////////////////////////// Socketio
 socket.on('damage',data=>{
