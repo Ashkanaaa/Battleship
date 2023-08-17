@@ -5,14 +5,20 @@ var Ready = false //set to true when all the ships have been placed
 var Joined = false //if other player has joined you can push the ready button if not, you have to wait  for the player to join
 var Startgame = false //set to true when both sides have  hit their ready botton
 var Mute = false
+
+removedShips = [] // list of ships that are dropped successfully on the grid
+var FinishGame = false
+//single player:
 var Singleplayer //true if its singleplayer mode
 var Turn //true if its player`s turn in single player mode
-removedShips = [] // list of ships that are dropped successfully on the grid
 var contHits //number of continous hits of compouter
 var contDirection //continous direction that should be hit
-var poppedItem //last item on the next_hit stack that includes a pair of number and direction {num,direction}
-var Keepstack
-var LastHitShip
+var lastHit
+var hitShips = [] //name of ships that were hit
+var incompleteShips //number of ships that were hit but not drown
+var differentShip //true if the current hit is a different ship than the last hit
+var userShipsCount //number of user`s ship initially (5), when 0, computer wins the game
+var computerShipsCount //number of computer`s ships initially(5), when 0, user wins the game
 const next_hit = [] //last cell that was hit by computer
 const Directions = {
     'North':-10,
@@ -24,9 +30,9 @@ const Directions = {
 
 //cells that were hit by computer (integers in range of [0,99])
 computer_hits = []
-
+correct_hits = [] //cells that had ships in them and hit by computer
 //keeping track of how much of the ship is sunk for user
-userShipCount = {
+var userShipCount = {
     'Carrier': 0,
     'Battleship': 0,
     'Submarine': 0,
@@ -34,7 +40,7 @@ userShipCount = {
     'Cruiser':0
 }
 //keeping track of how much of the ship is sunk for computer
-computerShipCount = {
+var computerShipCount = {
     'Carrier': 0,
     'Battleship': 0,
     'Submarine': 0,
@@ -84,7 +90,7 @@ var dropped //whether the ship was dropped successfully on the board
 
 //////////////////////////////////////// Game Functions
 function gridEventListener(event) {
-    console.log((event.targetElement || event.srcElement).id);
+    //console.log((event.targetElement || event.srcElement).id);
 }
 
 function gameInit(){
@@ -94,8 +100,6 @@ function gameInit(){
     addEventListener()
     setPlayerMode()
     Vertical = false;
-    
-    
 }
 
 //declaring whether its single or multiplayer and taking actions accordingly
@@ -104,14 +108,16 @@ function setPlayerMode(){
     var queryParams = new URLSearchParams(window.location.search);
     // Get the value of the 'singlePlayer' parameter
     var singlePlayerValue = queryParams.get("single");
-    console.log(singlePlayerValue)
     if (singlePlayerValue === "1") {
         Singleplayer = true
         randomizeFleet(true)
         Turn = true //setting the turn to player 
         contHits = 0 //setting the continous hits of computer to 0 initially
-        Keepstack = false
-        LastHitShip = ''
+        userShipsCount = 0
+        lastHit = -1
+        incompleteShips = 0
+        computerShipsCount = 5
+        userShipsCount = 5
         console.log("Single true")
     } else {
         Singleplayer = false
@@ -201,7 +207,6 @@ function randomizeFleet(computer){
 function dragStart(e){
     Dragging = e.target
     dropped = true
-    console.log("started dragging")
 }
 
 
@@ -332,9 +337,9 @@ function addShip(rand,ship,startCell, computer){
             shipCells.push(cells[Number(startIndex)+x])
         }
     }
-    console.log("shipCells")
+    // console.log("shipCells")
 
-    console.log(shipCells)
+    // console.log(shipCells)
 
     
     //preventing ships to extend horizontally
@@ -373,22 +378,20 @@ function addShip(rand,ship,startCell, computer){
 function addToMatrix(shipCells, ship, computer){
     for(x = 0;x<shipCells.length;x++){
         if(computer){
-            console.log("correct")
             computer_matrix[parseInt(shipCells[x].id)].filled = true
             computer_matrix[parseInt(shipCells[x].id)].type = ship
         }else{
-            console.log("wrong")
             matrix[parseInt(shipCells[x].id)].filled = true
             matrix[parseInt(shipCells[x].id)].type = ship
         }
     }
 
-    for(y = 0;y<matrix.length;y++){
-        if(computer_matrix[y].filled){
-            console.log(y)
-            console.log(computer_matrix[y])
-        }
-    }
+    // for(y = 0;y<matrix.length;y++){
+    //     if(computer_matrix[y].filled){
+    //         console.log(y)
+    //         console.log(computer_matrix[y])
+    //     }
+    // }
     // console.log("pleyer matrix:")
     // //print the matrix filled cells
     // for(y = 0;y<matrix.length;y++){
@@ -400,8 +403,9 @@ function addToMatrix(shipCells, ship, computer){
 }
 
 function readyToPlay(){
-    //if ships were placed and other player has joined
     
+    if(FinishGame)return
+    //if ships were placed and other player has joined
     if(Ready && Singleplayer){
         element = document.getElementById('ready-b')
         element.style.backgroundColor = 'green'
@@ -428,12 +432,14 @@ function gameOver(){
         printMessage('GameOver! You have LOST!!!')
         playSound('../static/effects/lost.mp3')
     }
-    Startgame = false
+    element = document.getElementById('ready-b')
+    element.style.backgroundColor = 'red'
+    FinishGame = true
 }
 
 function fire(e){
     hitcell = parseInt((e.targetElement || e.srcElement).id)
-    console.log("hit" + hitcell)
+    //console.log("hit" + hitcell)
     if(Startgame){
         if(Singleplayer){
             hit(hitcell,false)
@@ -483,7 +489,7 @@ function switchTurns() {
             if (!Turn) {
                 computerFire();
             }
-        }, 1000); // Delay of 3000 milliseconds (3 seconds)
+        }, 500); // Delay of 3000 milliseconds (3 seconds)
     }else{
         setTimeout(function() {
             Turn = !Turn;
@@ -504,50 +510,10 @@ function findShip(shipname){
            array.push(x)
         }
     }
-    console.log('findship works')
     return array
     
 }
 
-function hit(hitcell,computer){
-    if(computer){
-        if(matrix[hitcell].filled){
-            
-            if(matrix[hitcell].type.name == LastHitShip){
-                contHits = 2
-            }else{
-                Keepstack = true
-                contHits++
-            }
-            LastHitShip = matrix[hitcell].type.name
-            singleDamage(hitcell,true)
-            console.log('contHits: ' + contHits)
-        }else{
-            singleMissed(hitcell,true)
-            
-                contHits = 0
-        }
-        matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit
-        switchTurns() //switching the turn to user
-    }else{
-        //checking to see if its user`s turn
-        if(Turn){
-            if(computer_matrix[hitcell].hit){
-                printMessage("You have already hit this cell")
-            }else{
-                if(computer_matrix[hitcell].filled){
-                    singleDamage(hitcell,false)
-                }else{
-                    singleMissed(hitcell,false)   
-                }
-                computer_matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit 
-                switchTurns()//switching the turn to computer
-            }
-        }else{
-            printMessage("Not your turn yet!")
-        }
-    }   
-}
 
 function singleDamage(hitcell,computer){
     if(computer){
@@ -567,9 +533,15 @@ function singleDamage(hitcell,computer){
         //if user`s ship was drown
         if(userShipCount[matrix[hitcell].type.name] == matrix[hitcell].type.size){
             printMessage('Your ' + matrix[hitcell].type.name + ' was drown')
-            if(!Keepstack){
+            //if no ships left for user computer wins
+            userShipsCount--
+            incompleteShips--
+            if(userShipsCount == 0){
+                gameOver()
+            }
+            if(incompleteShips == 0){
                 next_hit.splice(0);
-                Keepstack = false
+                console.log('stack cleared')
             }
             
         }else{
@@ -593,16 +565,22 @@ function singleDamage(hitcell,computer){
 
         //if the ship is fully drown, color the corresponding cell on the enemy board
         if(computerShipCount[computer_matrix[hitcell].type.name] == computer_matrix[hitcell].type.size){
-            console.log('You have drown enemy`s')
-            console.log(computer_matrix[hitcell].type.name)
+            //console.log('You have drown enemy`s')
+            //console.log(computer_matrix[hitcell].type.name)
             array = findShip(computer_matrix[hitcell].type.name)
             array.forEach((cell)=>{
                 elementId = cell + 'Enemy'
                 element = document.getElementById(elementId)
                 element.classList.add(computer_matrix[cell].type.color)
             })
-            console.log('You have drown enemy`s')
-            printMessage('You have drown enemy`s '  + computer_matrix[hitcell].type.name + ' ship')
+            computerShipsCount--
+            if(computerShipsCount == 0){
+                gameOver()
+            }else{
+                 //console.log('You have drown enemy`s')
+                printMessage('You have drown enemy`s '  + computer_matrix[hitcell].type.name + ' ship')
+            }
+           
 
         }else{
             printMessage('You have hit enemy`s ship!')
@@ -615,14 +593,14 @@ function singleMissed(hitcell,computer){
     if(computer){
         elementId = hitcell + 'Player'
         element = document.getElementById(elementId)
-        console.log(element)
+        //console.log(element)
         element.style.backgroundColor = "#68AEB8";
         element.style.borderColor = "#68AEB8"
         //printMessage('Your turn now!')
     }else{
         elementId = hitcell + 'Enemy'
         element = document.getElementById(elementId)
-        console.log(element)
+        //console.log(element)
         element.style.backgroundColor = "#68AEB8";
         element.style.borderColor = "#68AEB8"
         printMessage('You have missed!')
@@ -630,19 +608,71 @@ function singleMissed(hitcell,computer){
     playSound('../static/effects/missed.mp3')
 }
 
+
+
+function hit(hitcell,computer){
+    if(computer){
+        if(matrix[hitcell].filled){
+            if(isNeighbour(hitcell)){
+                contHits = 2
+            }else{
+                contHits = 1
+            }
+            if(hitShips.includes(matrix[hitcell].type.name)){
+                differentShip = false
+            }else{
+                differentShip = true
+                incompleteShips++
+            }
+            singleDamage(hitcell,true)
+            LastHitShip = matrix[hitcell].type.name
+            correct_hits.push(hitcell)
+            hitShips.push(matrix[hitcell].type.name)
+            lastHit = hitcell //set the last hit to the corresponding cell
+            
+            console.log('contHits: ' + contHits)
+            console.log('lastHit: ' + lastHit)
+        }else{
+            singleMissed(hitcell,true)
+            contHits = 0
+        }
+        matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit
+        switchTurns() //switching the turn to user
+    }else{
+        //checking to see if its user`s turn
+        if(Turn){
+            if(computer_matrix[hitcell].hit){
+                printMessage("You have already hit this cell")
+            }else{
+                if(computer_matrix[hitcell].filled){
+                    singleDamage(hitcell,false)
+                }else{
+                    singleMissed(hitcell,false)   
+                }
+                computer_matrix[hitcell].hit = true //setting the hit true for the cell after a successful hit 
+                switchTurns()//switching the turn to computer
+            }
+        }else{
+            printMessage("Not your turn yet!")
+        }
+    }   
+}
+
 function computerFire(){
     let hitcell
-    if(contHits == 1 ){
+    if(contHits == 1 || differentShip){
         setDirections()
-    }else if(contHits > 1){
+    }
+    if(contHits > 1){
         sameDirectionHit()
     }
-
+    console.log('Directions (Stack):');
+    console.log(next_hit);
     //if stack has elements hit them first
     if(next_hit.length != 0){
-        poppedItem  = next_hit.pop()
-        contDirection = poppedItem.direction //setting the direction of the next cell that is going to be hit
-        hitcell = poppedItem.num //setting hitcell to the next cell that is going to be hit
+        let poppedItem  = next_hit.pop()
+        contDirection = poppedItem.dir //setting the direction of the next cell that is going to be hit
+        hitcell = poppedItem.number//setting hitcell to the next cell that is going to be hit
     }else{
         let randomNumber = Math.floor(Math.random() * 100); // Generates a random integer between 0 and 99
         console.log(randomNumber)
@@ -653,36 +683,42 @@ function computerFire(){
         computer_hits.push(randomNumber) //pushing the number in computer_hits so that its not hit again
         hitcell = randomNumber//setting hitcell to a random number that has not been hit
     }
-    lastHit = hitcell //set the last hit to the corresponding cell
+    
     hit(hitcell,true) //call the hit function with the corresponding cell
 }
 
 function setDirections() {
+    console.log('set direction calledddd')
     for (const direction in Directions) {
         const offset = Directions[direction];
         const num = lastHit + offset;
         
         if (num >= 0 && num < 100 && !computer_hits.includes(num)) {
-            next_hit.push({ num, direction })
+            console.log('HEREEEE: '+ direction)
+            next_hit.push({ number: num, dir: direction})
             computer_hits.push(num)
         }
     }
-
-    console.log('Directions (Stack):');
-    console.log(next_hit);
 }
-
-
 
 function sameDirectionHit(){
     console.log('same direction CALLEDDD')
+    console.log('first')
+    console.log(contDirection)
+    console.log(Directions[contDirection])
     num = lastHit + Directions[contDirection]
+    console.log('same direction')
+    console.log(num)
     if (num >= 0 && num < 100 && !computer_hits.includes(num)) {
-        next_hit.push({ num, contDirection })
-        console.log('same direction')
-        console.log(num)
+        next_hit.push({ number: num, dir: contDirection})
         computer_hits.push(num)
     }
+}
+
+function isNeighbour(hitcell){
+    if(lastHit == -1)return false
+    const absoluteDiff = Math.abs(hitcell - lastHit)
+    return absoluteDiff === 1 || absoluteDiff === 10
 }
 //////////////////////////////////////// Socketio
 socket.on('damage',data=>{
@@ -723,13 +759,13 @@ socket.on('missed',data=>{
     if(data.side == 'player'){
         elementId = data.hitcell + 'Player'
         element = document.getElementById(elementId)
-        console.log(element)
+        //console.log(element)
         element.style.backgroundColor = "#68AEB8";
         element.style.borderColor = "#68AEB8"
     }else if(data.side == 'enemy'){
         elementId = data.hitcell + 'Enemy'
         element = document.getElementById(elementId)
-        console.log(element)
+        //console.log(element)
         element.style.backgroundColor = "#68AEB8";
         element.style.borderColor = "#68AEB8"
     }
@@ -741,13 +777,10 @@ socket.on('missed',data=>{
 socket.on('gameinfo_message', message => {
     // Update the content of the messageDiv with the received message
     if (message) {
-        // Update the content of the messageDiv with the received message
-        var messageDiv = document.getElementById('dynamic_info')
-        //console.log("this is message: " + message);
-        messageDiv.innerHTML = '<p>' + message + '</p>';
+            printMessage(message)
     } else {
         // Handle the absence of a message (optional)
-        console.log("No message received from the server.");
+        //console.log("No message received from the server.");
     }
 });
 
@@ -762,22 +795,21 @@ socket.on('startgame', data=>{
 socket.on('connect', message => {
     // Update the content of the messageDiv with the received message
     if (message) {
-        // Update the content of the messageDiv with the received message
-        var messageDiv = document.getElementById("roomID");
-        console.log("this is message: " + message);
-        messageDiv.innerHTML += '<p>' + message + '</p>';
+        printMessage(message)
     } else {
         // Handle the absence of a message (optional)
-        console.log("No message received from the server.");
+        //console.log("No message received from the server.");
     }
 });
 
 socket.on('victory', () => {
     playSound('../static/effects/victory.mp3')
+    FinishGame = true
 })
 
 socket.on('defeat', () => {
     playSound('../static/effects/defeat.mp3')
+    FinishGame = true
 })
 //assigns the function gameInit to the onload event of the window object
 window.onload = gameInit;
