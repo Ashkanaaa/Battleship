@@ -9,15 +9,20 @@
     <title>Main Menu</title>
 </head>
 </body>
-<h1>Main Manu</h1>
-<form action="/singleplayer" method="GET">
-    <input type="hidden" name="single" value="1">
-    <button id="singleplayer-b">Singleplayer</button>
-</form>
+<main id="menu">
+    <h1 id="menu-title">Battleship Game</h1>
+    <form action="/singleplayer" method="GET">
+        <input type="hidden" name="single" value="1">
+        <button id="singleplayer-b">Singleplayer</button>
+    </form>
+    
+    <form action="/room" method="GET">
+        <button id="multiplayer-b">Multiplayer</button>
+    </form>
+    
 
-<form action="/room" method="GET">
-    <button id="multiplayer-b">Multiplayer</button>
-</form>
+</main>
+
 
 </body>
 </html>
